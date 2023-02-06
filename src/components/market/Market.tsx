@@ -4,12 +4,13 @@ import { getPaper } from "../../services/papers";
 import Graph from "../graph/Graph";
 import Strategy from "../strategy/Strategy";
 import { PaperContext } from "../../contexts/PaperContext";
+import Profit from "../profit/Profit";
 
 const Market = () => {
     const { paper, setPaper } = useContext(PaperContext);
     const [search, setSearch] = useState({});
     const [error, setError] = useState("");
-    const [show, setShow] = useState(false);
+    const [showError, setShowError] = useState(true);
     const [disabled, setDisabled] = useState(false);
 
     const handleSubmit = (event: any) => {
@@ -28,15 +29,13 @@ const Market = () => {
     useEffect(() => {
         getPaper(search, fetch)
             .then((result: any) => {
-                const series: string = Object.keys(result)[1];
-                console.log(series);
-                setPaper(result[series]);
-                setShow(false);
                 console.log(result);
+                setPaper(result);
+                setShowError(false);
             })
             .catch((err) => {
                 setError(err.message);
-                setShow(true);
+                setShowError(true);
             });
         console.log(search);
     }, [search]);
@@ -63,10 +62,12 @@ const Market = () => {
                     <button type="submit">Submit</button>
                 </form>
             </div>
-            <div>{show && <h1>{error}</h1>}</div>
-            {show || <Graph info={paper}></Graph>}
+            <div>{(showError && <h1>{error}</h1>) || <Graph info={paper}></Graph>}</div>
             <div className={style.Strategy}>
                 <Strategy info={search}></Strategy>
+            </div>
+            <div>
+                <Profit></Profit>
             </div>
         </div>
     );

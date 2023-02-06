@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import { SMA2Context } from "../../contexts/SMA2Context";
+import { SMAContext } from "../../contexts/SMAContext";
 import { getSMA } from "../../services/papers";
 import style from "./Strategy.module.scss";
 
@@ -7,6 +9,9 @@ interface StrategyProps {
 }
 
 const Strategy: React.FC<StrategyProps> = ({ info }) => {
+    const { SMA, setSMA } = useContext(SMAContext);
+    const { SMA2, setSMA2 } = useContext(SMA2Context);
+    const [showError, setShowError] = useState(false);
     const [parameters1, setParameters1] = useState({});
     const [parameters2, setParameters2] = useState({});
     const [symbol, setSymbol] = useState("");
@@ -18,6 +23,24 @@ const Strategy: React.FC<StrategyProps> = ({ info }) => {
         setSymbol(info.symbol);
         setInterval(info.interval);
         setFunc(info.function);
+        getSMA(parameters1, fetch)
+            .then((result: any) => {
+                setSMA(result);
+                setShowError(false);
+            })
+            .catch((err) => {
+                setError(err.message);
+                setShowError(true);
+            });
+        getSMA(parameters2, fetch)
+            .then((result: any) => {
+                setSMA2(result);
+                setShowError(false);
+            })
+            .catch((err) => {
+                setError(err.message);
+                setShowError(true);
+            });
     }, [info, parameters1, parameters2]);
 
     const handleSubmit = (event: any) => {
@@ -36,14 +59,6 @@ const Strategy: React.FC<StrategyProps> = ({ info }) => {
             symbol: symbol,
             func: func,
         });
-        getSMA(parameters1, fetch)
-            .then((result: any) => {
-                console.log(result);
-            })
-            .catch((err) => {
-                setError(err);
-                console.log(error);
-            });
     };
 
     return (
@@ -65,6 +80,7 @@ const Strategy: React.FC<StrategyProps> = ({ info }) => {
                     </select>
                     <button type="submit">Submit</button>
                 </form>
+                <div>{showError && <h1>{error}</h1>}</div>
             </div>
         </div>
     );

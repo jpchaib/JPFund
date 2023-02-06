@@ -21,8 +21,11 @@ export const getPaper = async (params: any, fetchFunction: Function) => {
     const json = await response.json();
     if ("Error Message" in json) {
         throw new Error(json["Error Message"]);
+    } else if ("Note" in json) {
+        throw new Error(json["Note"]);
     }
-    return json;
+    const seriesName: string = Object.keys(json)[1];
+    return json[seriesName];
 };
 
 export const getSMA = async (params: any, fetchFunction: Function) => {
@@ -45,5 +48,89 @@ export const getSMA = async (params: any, fetchFunction: Function) => {
     if ("Error Message" in json) {
         throw new Error(json["Error Message"]);
     }
-    return json;
+    const seriesName: string = Object.keys(json)[1];
+    return json[seriesName];
+};
+
+export const organizeCandleData = (info: any) => {
+    const seriesData: any = [];
+    Object.keys(info).forEach((key) => {
+        let x = key;
+        let y = [info[key]["1. open"], info[key]["2. high"], info[key]["3. low"], info[key]["4. close"]];
+
+        seriesData.push({
+            x: x,
+            y: y,
+        });
+    });
+
+    if (Object.keys(info)[0].length > 10) {
+        const closure = new Date("1970-01-01T16:00:00").getTime();
+        const aperture = new Date("1970-01-01T10:00:00").getTime();
+        const output = seriesData.filter((element: { x: string }) => new Date("1970-01-01T" + element.x.split(" ")[1]).getTime() >= aperture && new Date("1970-01-01T" + element.x.split(" ")[1]).getTime() <= closure);
+        return output;
+    }
+
+    return seriesData;
+};
+
+export const organizeLineData = (info: any) => {
+    const seriesData: any = [];
+    Object.keys(info).forEach((key) => {
+        let x = key;
+        let y = info[key]["SMA"];
+
+        seriesData.push({
+            x: x,
+            y: y,
+        });
+    });
+    return seriesData;
+};
+
+export const SMABacktest = (candles: any, SMA1: any, SMA2: any) => {
+    console.log(candles);
+    console.log(SMA1);
+    console.log(SMA2);
+    let position: string = "BUY";
+    let profit: number = 0;
+    let info: any = {
+        date: [],
+        type: [],
+        price: [],
+        profit: [],
+        SMA1: [],
+        SMA2: [],
+    };
+    console.log(info);
+    Object.keys(candles).forEach((key) => {
+        if (SMA2[key] == undefined || SMA1[key] == undefined) {
+            return info;
+        }
+        console.log(SMA1[key]["SMA"] as number);
+        console.log(SMA2[key]["SMA"] as number);
+        if (SMA1[key]["SMA"] > SMA2[key]["SMA"] && position == "BUY") {
+            info["date"].push(key);
+            info["type"].push(position);
+            info["price"].push(candles[key]["4. close"]);
+            info["SMA1"].push(SMA1[key]["SMA"]);
+            info["SMA2"].push(SMA2[key]["SMA"]);
+            profit = profit - parseInt(candles[key]["4. close"]);
+            info["profit"].push(profit);
+            position = "SELL";
+            console.log(info);
+        }
+        if (SMA1[key]["SMA"] < SMA2[key]["SMA"] && position == "SELL") {
+            info["date"].push(key);
+            info["type"].push(position);
+            info["price"].push(candles[key]["4. close"]);
+            info["SMA1"].push(SMA1[key]["SMA"]);
+            info["SMA2"].push(SMA2[key]["SMA"]);
+            profit = profit + parseInt(candles[key]["4. close"]);
+            info["profit"].push(profit);
+            position = "BUY";
+            console.log(info);
+        }
+    });
+    return info;
 };
